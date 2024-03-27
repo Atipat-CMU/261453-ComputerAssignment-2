@@ -6,7 +6,7 @@
 #include <sstream>
 #include <iostream>
 
-#include "../include/object/Image.h"
+#include "../object/Image.h"
 
 using namespace std;
 

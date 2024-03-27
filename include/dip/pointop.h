@@ -3,7 +3,7 @@
 
 #include <map>
 
-#include "./object/Image.h"
+#include "../object/Image.h"
 
 namespace dip {
     Image poperation(Image image, int (*fun)(int)){

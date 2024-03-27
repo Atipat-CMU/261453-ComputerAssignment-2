@@ -10,7 +10,7 @@
 
 using namespace std;
 
-namespace signal {
+namespace dip { namespace signal {
     // Function to perform 1D FFT along the rows of a 2D matrix
     void fft1D(vector<complex<double>>& row) {
         int N = row.size();
@@ -76,6 +76,67 @@ namespace signal {
 
         return output;
     }
-}
+
+    // Function to perform 1D inverse FFT
+    void ifft1D(vector<complex<double>>& spectrum) {
+        int N = spectrum.size();
+        if (N <= 1) {
+            return;
+        }
+
+        // Conjugate the spectrum
+        for (auto& val : spectrum) {
+            val = conj(val);
+        }
+
+        // Perform forward FFT
+        fft1D(spectrum);
+
+        // Scale the result
+        for (auto& val : spectrum) {
+            val /= N;
+        }
+    }
+
+    // Function to perform 2D inverse FFT
+    vector<vector<double>> ifft2D(const vector<vector<complex<double>>>& spectrum) {
+        int numRows = spectrum.size();
+        int numCols = spectrum[0].size();
+
+        vector<vector<complex<double>>> transposed(numCols, vector<complex<double>>(numRows));
+
+        // Transpose the spectrum
+        for (int i = 0; i < numRows; ++i) {
+            for (int j = 0; j < numCols; ++j) {
+                transposed[j][i] = spectrum[i][j];
+            }
+        }
+
+        // IFFT along the columns
+        for (int i = 0; i < numCols; ++i) {
+            ifft1D(transposed[i]);
+        }
+
+        // Transpose back the result
+        vector<vector<complex<double>>> transposedBack(numRows, vector<complex<double>>(numCols));
+        for (int i = 0; i < numCols; ++i) {
+            for (int j = 0; j < numRows; ++j) {
+                transposedBack[j][i] = transposed[i][j];
+            }
+        }
+
+        // IFFT along the rows
+        vector<vector<double>> output(numRows, vector<double>(numCols));
+        for (int i = 0; i < numRows; ++i) {
+            vector<complex<double>>& row = transposedBack[i];
+            ifft1D(row);
+            for (int j = 0; j < numCols; ++j) {
+                output[i][j] = row[j].real(); // Take real part
+            }
+        }
+
+        return output;
+    }
+}}
 
 #endif
