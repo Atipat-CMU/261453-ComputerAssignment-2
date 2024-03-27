@@ -96,6 +96,11 @@ namespace dip { namespace signal {
         for (auto& val : spectrum) {
             val /= N;
         }
+
+        // Conjugate the result again
+        for (auto& val : spectrum) {
+            val = conj(val);
+        }
     }
 
     // Function to perform 2D inverse FFT
@@ -103,35 +108,29 @@ namespace dip { namespace signal {
         int numRows = spectrum.size();
         int numCols = spectrum[0].size();
 
+        // Perform IFFT along the rows
         vector<vector<complex<double>>> transposed(numCols, vector<complex<double>>(numRows));
-
-        // Transpose the spectrum
         for (int i = 0; i < numRows; ++i) {
+            vector<complex<double>> row(numCols);
             for (int j = 0; j < numCols; ++j) {
-                transposed[j][i] = spectrum[i][j];
+                row[j] = spectrum[i][j];
+            }
+            ifft1D(row);
+            for (int j = 0; j < numCols; ++j) {
+                transposed[j][i] = row[j];
             }
         }
 
-        // IFFT along the columns
+        // Perform IFFT along the columns
         for (int i = 0; i < numCols; ++i) {
             ifft1D(transposed[i]);
         }
 
-        // Transpose back the result
-        vector<vector<complex<double>>> transposedBack(numRows, vector<complex<double>>(numCols));
-        for (int i = 0; i < numCols; ++i) {
-            for (int j = 0; j < numRows; ++j) {
-                transposedBack[j][i] = transposed[i][j];
-            }
-        }
-
-        // IFFT along the rows
-        vector<vector<double>> output(numRows, vector<double>(numCols));
+        // Transpose the result back
+        vector<vector<double>> output(numCols, vector<double>(numRows));
         for (int i = 0; i < numRows; ++i) {
-            vector<complex<double>>& row = transposedBack[i];
-            ifft1D(row);
             for (int j = 0; j < numCols; ++j) {
-                output[i][j] = row[j].real(); // Take real part
+                output[j][i] = transposed[i][j].real(); // Take real part
             }
         }
 

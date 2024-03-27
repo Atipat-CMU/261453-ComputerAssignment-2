@@ -12,6 +12,8 @@ namespace dip { namespace transform {
         private:
             int numRows;
             int numCols;
+            int padingRows;
+            int padingCols;
             vector<vector<complex<double>>> freq_domain;
 
             double log_normalize(double);
@@ -20,8 +22,11 @@ namespace dip { namespace transform {
             ~Fourier();
 
             void transform(Image);
+            Image inverse();
             Image getSpectrumImg();
             Image getPhaseImg();
+
+            void shift(int x, int y);
     };
 
     Fourier::Fourier()
@@ -41,15 +46,37 @@ namespace dip { namespace transform {
         this->numRows = image.rows();
         this->numCols = image.cols();
 
-        vector<vector<double>> input(numRows, vector<double>(numCols));
+        int power = 0;
+        if(numRows < numCols) power = ceil(log2(numCols));
+        else power = ceil(log2(numRows));
+
+        int N = pow(2, power);
+
+        vector<vector<double>> input(N, vector<double>(N));
         
-        for(int row = 0; row < this->numRows; row++){
-            for(int col = 0; col < this->numCols; col++){
-                input[row][col] = (double)image.get(row, col) * pow(-1, row+col);
+        for(int row = 0; row < N; row++){
+            for(int col = 0; col < N; col++){
+                if(row >= numRows || col >= numCols){
+                    input[row][col] = (double)0 * pow(-1, row+col);
+                }else input[row][col] = (double)image.get(row, col) * pow(-1, row+col);
             }
         }
 
         this->freq_domain = dip::signal::fft2D(input);
+    }
+
+    Image Fourier::inverse(){
+        vector<vector<double>> output = dip::signal::ifft2D(freq_domain);
+
+        Image out_image(numRows, numCols);
+
+        for(int row = 0; row < this->numRows; row++){
+            for(int col = 0; col < this->numCols; col++){
+                out_image.set(row, col, (int)(output[row][col] / pow(-1, row+col)));
+            }
+        }
+
+        return out_image;
     }
 
     Image Fourier::getSpectrumImg(){
@@ -104,6 +131,15 @@ namespace dip { namespace transform {
         }
 
         return phase_img;
+    }
+
+    void Fourier::shift(int x, int y){
+        for(int row = 0; row < this->numRows; row++){
+            for(int col = 0; col < this->numCols; col++){
+                complex<double> j(0.0, -2*M_PI*(((x*row)/numRows)+((y*col)/numCols)));
+                freq_domain[row][col] = exp(j)*freq_domain[row][col];
+            }
+        }
     }
 }}
 
