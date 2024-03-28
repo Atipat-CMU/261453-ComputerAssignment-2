@@ -55,7 +55,7 @@ namespace dip {
         return Image(image);
     }
 
-    void imwrite(Image image, string filename){
+    void imwrite(Image& image, string filename){
         ofstream file(filename, std::ios::binary);
         file << "P5" << endl;
         file << image.cols() << " " << image.rows() << endl;
@@ -76,7 +76,7 @@ namespace dip {
         file.close();
     }
 
-    void imshow(Image image){
+    void imshow(Image& image){
         for(int row = 0; row < image.rows(); ++row) {
             for(int col = 0; col < image.cols(); ++col) {
                 cout << image.get(row, col) << " ";

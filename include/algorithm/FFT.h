@@ -37,20 +37,19 @@ namespace dip { namespace signal {
         }
     }
 
-    // Function to perform 2D FFT
-    vector<vector<complex<double>>> fft2D(const vector<vector<double>>& input) {
+    vector<vector<complex<double>>> fft2D(const vector<vector<complex<double>>>& input) {
         int numRows = input.size();
         int numCols = input[0].size();
 
         vector<vector<complex<double>>> output(numRows, vector<complex<double>>(numCols));
 
-        // FFT along the rows
+        // Perform 1D FFT along the rows
         for (int i = 0; i < numRows; ++i) {
             vector<complex<double>> row(numCols);
             for (int j = 0; j < numCols; ++j) {
-                row[j] = complex<double>(input[i][j], 0);
+                row[j] = input[i][j];
             }
-            fft1D(row);
+            fft1D(row); // Assuming fft1D is defined elsewhere to perform 1D FFT
             output[i] = row;
         }
 
@@ -62,9 +61,10 @@ namespace dip { namespace signal {
             }
         }
 
-        // FFT along the columns
+        // Perform 1D FFT along the columns
         for (int i = 0; i < numCols; ++i) {
-            fft1D(transposed[i]);
+            vector<complex<double>>& col = transposed[i];
+            fft1D(col); // Assuming fft1D is defined elsewhere to perform 1D FFT
         }
 
         // Transpose back the result
@@ -104,7 +104,7 @@ namespace dip { namespace signal {
     }
 
     // Function to perform 2D inverse FFT
-    vector<vector<double>> ifft2D(const vector<vector<complex<double>>>& spectrum) {
+    vector<vector<complex<double>>> ifft2D(const vector<vector<complex<double>>>& spectrum) {
         int numRows = spectrum.size();
         int numCols = spectrum[0].size();
 
@@ -127,10 +127,10 @@ namespace dip { namespace signal {
         }
 
         // Transpose the result back
-        vector<vector<double>> output(numCols, vector<double>(numRows));
+        vector<vector<complex<double>>> output(numCols, vector<complex<double>>(numRows));
         for (int i = 0; i < numRows; ++i) {
             for (int j = 0; j < numCols; ++j) {
-                output[j][i] = transposed[i][j].real(); // Take real part
+                output[j][i] = transposed[i][j];
             }
         }
 

@@ -43,6 +43,7 @@ namespace dip {
         int get(Pixel);
         int get(int, int);
         int get(int, int) const;
+        int getOutZero(int, int);
         int getHistFreq(int);
         void printHistogram();
 
@@ -112,6 +113,11 @@ namespace dip {
     }
 
     int Image::get(int x, int y) const{
+        return this->image.get(x, y);
+    }
+    
+    int Image::getOutZero(int x, int y){
+        if(!(0 <= x && x < this->rows() && 0 <= y && y < this->cols())) return 0;
         return this->image.get(x, y);
     }
 

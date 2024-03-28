@@ -1,7 +1,6 @@
 #include "../../include/dip.h"
 
 #include <iostream>
-#include <vector>
 
 using namespace std;
 using namespace dip;
