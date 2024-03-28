@@ -5,5 +5,6 @@
 #include "./dip/geometricop.h"
 #include "./dip/transform.h"
 #include "./dip/BlobColoring.h"
+#include "./object/Kernel.h"
 #include "./object/Moment.h"
 #include "./algorithm/GuassianElimination.h"

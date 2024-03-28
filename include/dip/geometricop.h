@@ -95,6 +95,23 @@ namespace dip {
 
         return new_image;
     }
+
+    Image downSample(Image& ori_image, int value){
+        int numRows = round(ori_image.rows()/2);
+        int numCols = round(ori_image.cols()/2);
+
+        Image new_image(numRows, numCols);
+
+        for(int row = 0; row < numRows; row++){
+            for(int col = 0; col < numCols; col++){
+                double x = row*value;
+                double y = col*value;
+                new_image.set(row, col, NearestInterpolation(ori_image, x, y));
+            }
+        }
+
+        return new_image;
+    }
 }
 
 #endif

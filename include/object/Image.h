@@ -50,6 +50,8 @@ namespace dip {
         Image mark(Mask, int);
         Image highlight(Mask);
 
+        Image pad(int t, int l, int b, int r);
+        Image unpad(int t, int l, int b, int r);
         Image crop(Frame);
         Image operator+(Image const&);
         Image operator-(Image const&);
@@ -214,6 +216,40 @@ namespace dip {
         for(int i = 0; i < 256; i++){
             cout << i << ": " << this->histogram[i] << endl;
         }
+    }
+
+    Image Image::pad(int t, int l, int b, int r){
+        int numRows = this->rows()+t+b;
+        int numCols = this->cols()+l+r;
+
+        Image new_image(numRows, numCols);
+
+        for(int row = 0; row < numRows; row++){
+            for(int col = 0; col < numRows; col++){
+                if(row < t || col < l);
+                else if(row >= this->rows()+b || col >= this->cols()+r);
+                else{
+                    new_image.set(row, col, this->get(row-t, col-l));
+                }
+            }
+        }
+
+        return new_image;
+    }
+
+    Image Image::unpad(int t, int l, int b, int r){
+        int numRows = this->rows()-t-b;
+        int numCols = this->cols()-l-r;
+
+        Image new_image(numRows, numCols);
+
+        for(int row = 0; row < numRows; row++){
+            for(int col = 0; col < numRows; col++){
+                new_image.set(row, col, this->get(row+t, col+l));
+            }
+        }
+
+        return new_image;
     }
 
     Image Image::crop(Frame frame){
