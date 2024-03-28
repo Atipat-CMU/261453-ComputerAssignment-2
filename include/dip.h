@@ -3,6 +3,7 @@
 #include "./dip/im.h"
 #include "./dip/pointop.h"
 #include "./dip/geometricop.h"
+#include "./dip/spatialop.h"
 #include "./dip/transform.h"
 #include "./dip/BlobColoring.h"
 #include "./object/Kernel.h"

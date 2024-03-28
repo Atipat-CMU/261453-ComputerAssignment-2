@@ -20,15 +20,17 @@ namespace dip {
         double log_normalize(double);
     public:
         Kernel();
+        Kernel(int, int);
         Kernel(vector<vector<double>>);
         ~Kernel();
+        int c_x = 1, c_y = 1;
 
         // function
         int rows() const;
         int cols() const;
 
-        void set(int, int, int);
-        int get(int, int);
+        void set(int, int, double);
+        double get(int, int);
 
         vector<vector<complex<double>>> transform(int N);
         Image getSpectrumImg(int N);
@@ -38,6 +40,11 @@ namespace dip {
     
     Kernel::Kernel()
     {
+    }
+
+    Kernel::Kernel(int numrows, int numcols)
+    {
+        this->kernel = Vector2D<double>(numrows, numcols);
     }
 
     Kernel::Kernel(vector<vector<double>> kernel)
@@ -63,11 +70,11 @@ namespace dip {
         return this->kernel.cols();
     }
 
-    void Kernel::set(int x, int y, int d){
+    void Kernel::set(int x, int y, double d){
         this->kernel.set(x, y, d);
     }
 
-    int Kernel::get(int x, int y){
+    double Kernel::get(int x, int y){
         if(!(0 <= x && x < this->rows() && 0 <= y && y < this->cols())) return 0;
         return this->kernel.get(x, y);
     }
@@ -115,7 +122,7 @@ namespace dip {
 
     Image Kernel::getSpectrumImg(int N){
         Image spectrum_img(N, N);
-        vector<vector<complex<double>>> freq_domain_center = this->transform_center(N);
+        vector<vector<complex<double>>> freq_domain_center = this->transform(N);
 
         double maxVal = log_normalize(abs(freq_domain_center[0][0]));
         double minVal = log_normalize(abs(freq_domain_center[0][0]));
@@ -143,7 +150,7 @@ namespace dip {
 
     Image Kernel::getPhaseImg(int N){
         Image phase_img(N, N);
-        vector<vector<complex<double>>> freq_domain_center = this->transform_center(N);
+        vector<vector<complex<double>>> freq_domain_center = this->transform(N);
 
         double maxVal = log_normalize(arg(freq_domain_center[0][0]));
         double minVal = log_normalize(arg(freq_domain_center[0][0]));

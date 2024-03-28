@@ -15,27 +15,39 @@ namespace dip { namespace transform {
             int numCols;
             int N;
             vector<vector<complex<double>>> freq_domain;
-            vector<vector<complex<double>>> transform_center();
+
+            vector<vector<complex<double>>> transform_center(Image&);
+            vector<vector<complex<double>>> transform(Image&);
+
+            Image inverse_origin(vector<vector<complex<double>>>);
+            Image inverse_center(vector<vector<complex<double>>>);
 
             double log_normalize(double);
             Image inverse_N();
         public:
             Fourier();
+            Fourier(Image);
             ~Fourier();
 
-            void transform(Image&);
-            Image inverse();
-            Image inverseWithoutPhase();
-            Image inverseWithoutAmplitude();
             Image getSpectrumImg();
             Image getPhaseImg();
 
+            Image inverse();
+            Image inverseWithoutPhase();
+            Image inverseWithoutAmplitude();
+
             void shift(int x, int y);
+            void applyFilter(complex<double> (*fun)(int, int, int, int));
             void applyKernel(Kernel kernel);
     };
 
     Fourier::Fourier()
     {
+    }
+
+    Fourier::Fourier(Image image)
+    {
+        this->freq_domain = transform(image);
     }
     
     Fourier::~Fourier()
@@ -47,7 +59,7 @@ namespace dip { namespace transform {
         return log10(value);
     }
 
-    void Fourier::transform(Image& image){
+    vector<vector<complex<double>>> Fourier::transform(Image& image){
         this->numRows = image.rows();
         this->numCols = image.cols();
 
@@ -61,16 +73,46 @@ namespace dip { namespace transform {
         
         for(int row = 0; row < N; row++){
             for(int col = 0; col < N; col++){
+                double j = 2 * M_PI * (((numRows/2.0) * row + (numCols/2.0) * col) / double(N));
+                complex<double> center_shift = polar(1.0, j);
                 if(row < numRows && col < numCols){
                     input[row][col] = (double)image.get(row, col);
                 }
             }
         }
+        return dip::signal::fft2D(input);
+    }
 
-        this->freq_domain = dip::signal::fft2D(input);
+    vector<vector<complex<double>>> Fourier::transform_center(Image& image){
+        this->numRows = image.rows();
+        this->numCols = image.cols();
+
+        int power = 0;
+        if(numRows < numCols) power = ceil(log2(numCols));
+        else power = ceil(log2(numRows));
+
+        this->N = pow(2, power);
+
+        vector<vector<complex<double>>> input(N, vector<complex<double>>(N));
+        
+        for(int row = 0; row < N; row++){
+            for(int col = 0; col < N; col++){
+                double j = 2 * M_PI * (((numRows/2.0) * row + (numCols/2.0) * col) / double(N));
+                complex<double> center_shift = polar(1.0, j);
+                if(row < numRows && col < numCols){
+                    input[row][col] = (double)image.get(row, col) * center_shift;
+                }
+            }
+        }
+
+        return dip::signal::fft2D(input);
     }
 
     Image Fourier::inverse(){
+        return inverse_origin(this->freq_domain);
+    }
+
+    Image Fourier::inverse_origin(vector<vector<complex<double>>> freq_domain){
         vector<vector<complex<double>>> output = dip::signal::ifft2D(freq_domain);
 
         Image out_image(numRows, numCols);
@@ -78,6 +120,22 @@ namespace dip { namespace transform {
         for(int row = 0; row < this->numRows; row++){
             for(int col = 0; col < this->numCols; col++){
                 out_image.set(row, col, (int)((output[row][col]).real()));
+            }
+        }
+
+        return out_image;
+    }
+
+    Image Fourier::inverse_center(vector<vector<complex<double>>> freq_domain){
+        vector<vector<complex<double>>> output = dip::signal::ifft2D(freq_domain);
+
+        Image out_image(numRows, numCols);
+
+        for(int row = 0; row < this->numRows; row++){
+            for(int col = 0; col < this->numCols; col++){
+                double j = 2 * M_PI * (((numRows/2.0) * row + (numCols/2.0) * col) / double(N));
+                complex<double> center_shift = polar(1.0, j);
+                out_image.set(row, col, (int)((output[row][col] / center_shift).real()));
             }
         }
 
@@ -158,35 +216,9 @@ namespace dip { namespace transform {
         return out_image;
     }
 
-    vector<vector<complex<double>>> Fourier::transform_center(){
-        Image image = this->inverse();
-        this->numRows = image.rows();
-        this->numCols = image.cols();
-
-        int power = 0;
-        if(numRows < numCols) power = ceil(log2(numCols));
-        else power = ceil(log2(numRows));
-
-        this->N = pow(2, power);
-
-        vector<vector<complex<double>>> input(N, vector<complex<double>>(N));
-        
-        for(int row = 0; row < N; row++){
-            for(int col = 0; col < N; col++){
-                double j = 2 * M_PI * (((numRows/2.0) * row + (numCols/2.0) * col) / double(N));
-                complex<double> center_shift = polar(1.0, j);
-                if(row < numRows && col < numCols){
-                    input[row][col] = (double)image.get(row, col) * center_shift;
-                }
-            }
-        }
-
-        return dip::signal::fft2D(input);
-    }
-
     Image Fourier::getSpectrumImg(){
-        Image spectrum_img(numRows, numCols);
-        vector<vector<complex<double>>> freq_domain_center = this->transform_center();
+        Image image = inverse();
+        vector<vector<complex<double>>> freq_domain_center = transform_center(image);
 
         double maxVal = log_normalize(abs(freq_domain_center[0][0]));
         double minVal = log_normalize(abs(freq_domain_center[0][0]));
@@ -202,6 +234,8 @@ namespace dip { namespace transform {
             }
         }
 
+        Image spectrum_img(numRows, numCols);
+
         for(int row = 0; row < this->numRows; row++){
             for(int col = 0; col < this->numCols; col++){
                 int spectrum = static_cast<int>(255 * (log_normalize(abs(freq_domain_center[row][col])) - minVal) / (maxVal-minVal));
@@ -213,8 +247,8 @@ namespace dip { namespace transform {
     }
 
     Image Fourier::getPhaseImg(){
-        Image phase_img(numRows, numCols);
-        vector<vector<complex<double>>> freq_domain_center = this->transform_center();
+        Image image = inverse();
+        vector<vector<complex<double>>> freq_domain_center = transform_center(image);
 
         double maxVal = log_normalize(arg(freq_domain_center[0][0]));
         double minVal = log_normalize(arg(freq_domain_center[0][0]));
@@ -230,6 +264,8 @@ namespace dip { namespace transform {
             }
         }
 
+        Image phase_img(numRows, numCols);
+
         for(int row = 0; row < this->numRows; row++){
             for(int col = 0; col < this->numCols; col++){
                 int spectrum = static_cast<int>(255 * (log_normalize(arg(freq_domain_center[row][col])) - minVal) / (maxVal-minVal));
@@ -243,28 +279,42 @@ namespace dip { namespace transform {
     void Fourier::shift(int x, int y){
         for(int row = 0; row < N; row++){
             for(int col = 0; col < N; col++){
-                double j = -2 * M_PI * ((x * row + y * col) / double(N));
+                double j = -2 * M_PI * ((x*row + y*col) / double(N));
                 complex<double> phase_shift = polar(1.0, j);
                 this->freq_domain[row][col] = phase_shift * freq_domain[row][col];
             }
         }
     }
 
+    void Fourier::applyFilter(complex<double> (*fun)(int u, int v, int M, int N)){
+        Image input = inverse();
+        vector<vector<complex<double>>> freq_domain_center = transform_center(input);
+
+        for(int row = 0; row < N; row++){
+            for(int col = 0; col < N; col++){
+                freq_domain_center[row][col] = fun(row, col, numRows, numCols) * freq_domain_center[row][col];
+            }
+        }
+
+        Image output = inverse_center(freq_domain_center);
+        this->freq_domain = transform(output);
+    }
+
     void Fourier::applyKernel(Kernel kernel){
         Image input = inverse();
         input = input.pad(1,1,1,1);
-        transform(input);
+        this->freq_domain = transform(input);
 
         vector<vector<complex<double>>> kernel_freq_domain = kernel.transform(N);
         for(int row = 0; row < N; row++){
             for(int col = 0; col < N; col++){
-                this->freq_domain[row][col] = kernel_freq_domain[row][col] * freq_domain[row][col];
+                this->freq_domain[row][col] = kernel_freq_domain[row][col] * this->freq_domain[row][col];
             }
         }
 
         Image output = inverse_N();
         output = output.unpad(2,2,N-numRows,N-numCols);
-        transform(output);
+        this->freq_domain = transform(output);
     }
 }}
 
