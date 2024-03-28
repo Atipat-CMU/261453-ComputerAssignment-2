@@ -14,7 +14,7 @@ int main(int argc, char const *argv[])
     transform::Fourier fourier;
     fourier.transform(cross_img);
 
-    fourier.shift(100, 200);
+    fourier.shift(20, 30);
     Image cross_shift_img = fourier.inverse();
     imwrite(cross_shift_img, "../out/ca1/Cross_shift.pgm");
 

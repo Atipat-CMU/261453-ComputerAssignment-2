@@ -12,8 +12,7 @@ namespace dip { namespace transform {
         private:
             int numRows;
             int numCols;
-            int padingRows;
-            int padingCols;
+            int N;
             vector<vector<complex<double>>> freq_domain;
 
             double log_normalize(double);
@@ -50,7 +49,7 @@ namespace dip { namespace transform {
         if(numRows < numCols) power = ceil(log2(numCols));
         else power = ceil(log2(numRows));
 
-        int N = pow(2, power);
+        this->N = pow(2, power);
 
         vector<vector<double>> input(N, vector<double>(N));
         
@@ -134,10 +133,11 @@ namespace dip { namespace transform {
     }
 
     void Fourier::shift(int x, int y){
-        for(int row = 0; row < this->numRows; row++){
-            for(int col = 0; col < this->numCols; col++){
-                complex<double> j(0.0, -2*M_PI*(((x*row)/numRows)+((y*col)/numCols)));
-                freq_domain[row][col] = exp(j)*freq_domain[row][col];
+        for(int row = 0; row < N; row++){
+            for(int col = 0; col < N; col++){
+                double j = -2 * M_PI * ((x * row + y * col) / double(N));
+                complex<double> phase_shift = polar(1.0, j);
+                this->freq_domain[row][col] *= phase_shift;
             }
         }
     }
